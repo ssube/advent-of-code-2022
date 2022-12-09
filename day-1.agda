@@ -14,6 +14,9 @@ open import Relation.Nullary
 open import Relation.Binary
 open import IO
 
+_s∷_ : String → String → String
+a s∷ b = primStringAppend a b
+
 filter : {A : Set} -> (A -> Bool) -> List A -> List A
 filter p [] = []
 filter p (x ∷ xs) with p x
@@ -29,9 +32,30 @@ data Line : Set where
   empty : Line
   item : Nat → Line
 
+digit : Char → Maybe Nat
+digit '0' = just 0
+digit '1' = just 1
+digit '2' = just 2
+digit '3' = just 3
+digit '4' = just 4
+digit '5' = just 5
+digit '6' = just 6
+digit '7' = just 7
+digit '8' = just 8
+digit '9' = just 9
+digit _ = nothing
+
 parseLine : Maybe String → Line
 parseLine nothing = empty
-parseLine _ = item 0
+parseLine (just s) = go nothing (mapList digit (Data.List.reverse (primStringToList s)))
+  where
+  go : Maybe Nat → List (Maybe Nat) → Line
+  go nothing [] = empty
+  go nothing (nothing ∷ xs) = go nothing xs
+  go nothing ((just n) ∷ xs) = go (just n) xs
+  go (just n) [] = item n
+  go (just n) (nothing ∷ xs) = go (just (n * 10)) xs {- should this have * 10 ? -}
+  go (just n) ((just n₂) ∷ xs) = go (just ((n * 10) + n₂)) xs
 
 splitLines : String → List Line
 splitLines s = Data.List.reverse (mapList parseLine (go [] nothing (primStringToList s)))
@@ -69,14 +93,15 @@ showLine (item n) = show n
 
 showLines : List Line → String
 showLines [] = ""
-showLines (n ∷ r) = primStringAppend (primStringAppend (showLine n) ",") (showLines r)
+showLines (n ∷ r) = (showLine n) s∷ ("," s∷ (showLines r))
 
 showList : List Nat → String
 showList [] = ""
-showList (n ∷ r) = primStringAppend (primStringAppend (show n) ",") (showList r)
+showList (n ∷ r) = (show n) s∷ ("," s∷ (showList r))
 
 {- main -}
 main : Main
-main = run (putStrLn (showList (splitElves "1000\n2000\n\n3000\n\n4000\n")))
+main = run (putStrLn (showLines (splitLines "1000\n2000\n\n3000\n\n4000\n")))
 
+{- main = run (putStrLn (showList (splitElves "1000\n2000\n\n3000\n\n4000\n"))) -}
 {- main = run (putStrLn (showLines (splitLines "1000\n2000\n\n3000\n\n4000\n"))) -}
