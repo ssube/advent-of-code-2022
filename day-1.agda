@@ -9,6 +9,7 @@ open import Agda.Builtin.Nat
 open import Agda.Builtin.String
 import Data.List using (reverse)
 open import Data.Maybe
+open import Data.Nat using (_≤_)
 open import Data.Nat.Show
 open import Relation.Nullary
 open import Relation.Binary
@@ -77,7 +78,7 @@ calories empty = 0
 calories (item n) = n
 
 splitElves : String → List Nat
-splitElves s = go [] nothing (splitLines s)
+splitElves s = Data.List.reverse (go [] nothing (splitLines s))
   where
   go : List Nat → Maybe Nat → List Line → List Nat
   go acl nothing []           = acl
@@ -99,9 +100,34 @@ showList : List Nat → String
 showList [] = ""
 showList (n ∷ r) = (show n) s∷ ("," s∷ (showList r))
 
+findMax : List Nat → Maybe Nat
+findMax [] = nothing
+findMax nr = go 0 0 nothing nr
+  where
+  go : Nat → Nat → Maybe Nat → List Nat → Maybe Nat
+  go idx mval nothing [] = nothing
+  go idx mval midx [] = midx
+  go idx mval midx (n ∷ nr) with (n Data.Nat.≥? mval)
+  ...                       | yes _ = go (idx + 1) n (just idx) nr
+  ...                       | no _ = go (idx + 1) mval midx nr
+
+showMaybe : Maybe Nat → String
+showMaybe nothing = "nothing"
+showMaybe (just n) = show n
+
+takeAt : List Nat → Nat → Maybe Nat
+takeAt [] _ = nothing
+takeAt (n ∷ nr) 0 = just n
+takeAt (n ∷ nr) (suc i) = takeAt nr i
+
 {- main -}
 main : Main
-main = run (putStrLn (showLines (splitLines "1000\n2000\n\n3000\n\n4000\n")))
+main with splitElves "1000\n2000\n3000\n\n4000\n\n5000\n6000\n\n7000\n8000\n9000\n\n10000\n"
+... | [] = run (putStrLn "no elves")
+... | elves with findMax elves
+...         | nothing = run (putStrLn "no rich elves")
+...         | just idx = run (putStrLn ("elf " s∷ ((show (idx + 1)) s∷ (" has " s∷ ((showMaybe (takeAt elves idx)) s∷ " calories.")))))
 
+{- main = run (putStrLn (showLines (splitLines "1000\n2000\n\n3000\n\n4000\n"))) -}
 {- main = run (putStrLn (showList (splitElves "1000\n2000\n\n3000\n\n4000\n"))) -}
 {- main = run (putStrLn (showLines (splitLines "1000\n2000\n\n3000\n\n4000\n"))) -}
